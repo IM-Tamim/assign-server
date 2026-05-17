@@ -71,6 +71,24 @@ async function run() {
       res.json(result);
     });
 
+    app.patch("/doctors/:id/review", async (req, res) => {
+    const { id } = req.params;
+    const { rating, comment, userName, userEmail } = req.body;
+
+    const doctor = await doctorCollection.findOne({ _id: new ObjectId(id) });
+    const newRating = parseFloat(((doctor.rating + rating) / 2).toFixed(1));
+    const newTotalReviews = doctor.totalReviews + 1;
+
+    const result = await doctorCollection.updateOne(
+        { _id: new ObjectId(id) },
+        {
+            $set: { rating: newRating, totalReviews: newTotalReviews },
+            $push: { reviews: { userName, userEmail, rating, comment, date: new Date().toISOString() } },
+        }
+    );
+    res.json(result);
+});
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
