@@ -54,6 +54,15 @@ async function run() {
       res.json(result);
     });
 
+    app.patch("/appointments/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await appointmentsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: req.body },
+      );
+      res.json(result);
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
