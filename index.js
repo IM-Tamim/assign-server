@@ -7,8 +7,7 @@ const app = express();
 app.use(cors());
 const port = process.env.PORT || 8000;
 
-const uri =
-  "mongodb+srv://assignment-09:doUQ2KLohyNqE54Q@cluster0.p5o2cld.mongodb.net/?appName=Cluster0";
+const uri = process.env.MONGO_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -26,8 +25,12 @@ async function run() {
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
 
-    
-
+    const db = client.db("DocAppoint");
+    const doctorCollection = db.collection("doctors");
+    app.get("/doctors", async (req, res) => {
+      const result = await doctorCollection.find().toArray();
+      res.json(result);
+    });
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
