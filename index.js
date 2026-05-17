@@ -6,8 +6,8 @@ const cors = require("cors");
 dotenv.config();
 const app = express();
 app.use(cors());
+app.use(express.json()); 
 const port = process.env.PORT || 8000;
-
 const uri = process.env.MONGO_URI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -28,7 +28,7 @@ async function run() {
 
     const db = client.db("DocAppoint");
     const doctorCollection = db.collection("doctors");
-
+    const appointmentsCollection = db.collection("appointments");
 
     app.get("/doctors", async (req, res) => {
       const result = await doctorCollection.find().toArray();
@@ -41,6 +41,11 @@ async function run() {
       res.json(result);
     });
 
+    app.post("/appointments", async (req, res) => {
+      const appointment = req.body;
+      const result = await appointmentsCollection.insertOne(appointment);
+      res.json(result);
+    });
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
