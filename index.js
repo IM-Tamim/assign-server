@@ -2,6 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 
 dotenv.config();
 const app = express();
@@ -10,6 +11,27 @@ app.use(express.json());
 const port = process.env.PORT || 8000;
 const uri = process.env.MONGO_URI;
 
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
+);
+ 
+const verifyToken = async (req, res, next) => {
+  const authHeader = req?.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const token = authHeader?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    req.user = payload;
+    next();
+  } catch (error) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+};
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -35,13 +57,13 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/doctors/:id", async (req, res) => {
+    app.get("/doctors/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await doctorCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
     });
 
-    app.post("/appointments", async (req, res) => {
+    app.post("/appointments",verifyToken, async (req, res) => {
       const appointment = req.body;
       const result = await appointmentsCollection.insertOne(appointment);
       res.json(result);
@@ -54,7 +76,7 @@ async function run() {
       res.json(result);
     });
 
-    app.patch("/appointments/:id", async (req, res) => {
+    app.patch("/appointments/:id",verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await appointmentsCollection.updateOne(
         { _id: new ObjectId(id) },
@@ -63,7 +85,7 @@ async function run() {
       res.json(result);
     });
 
-    app.delete("/appointments/:id", async (req, res) => {
+    app.delete("/appointments/:id",verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await appointmentsCollection.deleteOne({
         _id: new ObjectId(id),
@@ -71,7 +93,7 @@ async function run() {
       res.json(result);
     });
 
-    app.patch("/doctors/:id/review", async (req, res) => {
+    app.patch("/doctors/:id/review",verifyToken, async (req, res) => {
     const { id } = req.params;
     const { rating, comment, userName, userEmail } = req.body;
 
